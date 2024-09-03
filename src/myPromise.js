@@ -90,7 +90,7 @@ class MyPromise {
   }
 
   static resolve (data) {
-    
+  
   }
   static reject (data) {
 

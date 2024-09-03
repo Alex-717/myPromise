@@ -71,6 +71,7 @@ class MyPromise {
         }
       } catch (err) {
         console.log('runMicroTask err', err)
+        reject(err)
       }
     })
   }

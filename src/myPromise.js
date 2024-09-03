@@ -90,10 +90,20 @@ class MyPromise {
   }
 
   static resolve (data) {
-  
+    if (data instanceof MyPromise) 
+      return data
+    return new MyPromise((resolve, reject) => {
+      if (isPromiseLike(data)) {
+        data.then(resolve, reject)
+      } else {
+        resolve(data)
+      }
+    })
   }
   static reject (data) {
-
+    return new MyPromise((resolve, reject) => {
+      reject(data)
+    })
   }
 
   static all (pros) {
@@ -115,14 +125,55 @@ class MyPromise {
       }
     })
   }
-  static allSettled () {
 
+  static allSettled (pros) {
+    const newPros = []
+    for (let p of pros) {
+      // then会返回一个promise，p已决时，状态不管是fullfill还是reject，都会走到对应的回调。
+      // then返回的promise的状态都是fullfill。后面交给MyPromise.all
+      newPros.push(
+        MyPromise.resolve(p).then((data) => {
+          return {
+            status: STATUS.FULLFILLED,
+            value: data
+          }
+        }, (err) => {
+          return {
+            status: STATUS.REJECTED,
+            reason: err
+          }
+        })
+      )
+    }
+    return MyPromise.all(newPros)
   }
-  static race () {
 
+  static race (pros) {
+    return new MyPromise((resolve, reject) => {
+      for (let p of pros) {
+        MyPromise.resolve(p).then(resolve, reject)
+      }
+    })
   }
-  static any () {
 
+  static any (pros) {
+    return new MyPromise((resolve, reject) => {
+      const errResults = []
+      let count = 0
+      let rejectCount = 0
+      for (let p of pros) {
+        let i = count++
+        MyPromise.resolve(p).then(resolve, err => {
+          errResults[i].push(err)
+          if (rejectCount === count) {
+            reject(errResults)
+          }
+        })
+      }
+      if (count === 0) {
+        reject(new Error('参数需要是个可迭代对象'))
+      }
+    })
   }
 }
 
